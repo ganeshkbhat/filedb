@@ -1,4 +1,4 @@
-package main
+package memcached
 
 import (
 	memcached "github.com/mattrobenolt/go-memcached"
@@ -17,7 +17,8 @@ func (c *Cache) Get(key string) (item *memcached.Item, err error) {
 	return nil, memcached.NotFound
 }
 
-func main() {
-	server := memcached.NewServer(":11211", &Cache{})
-	server.ListenAndServe()
-}
+// func main() {
+// 	server := memcached.NewServer(":11211", &Cache{})
+// 	server.ListenAndServe()
+// }
+
