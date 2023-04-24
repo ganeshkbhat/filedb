@@ -7,10 +7,9 @@ import (
 	// "strings"
 )
 
-
 type localVar struct {
-    name  string
-    value interface{}
+	name  string
+	value interface{}
 }
 
 type byName []localVar
@@ -18,7 +17,6 @@ type byName []localVar
 func (a byName) Len() int           { return len(a) }
 func (a byName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byName) Less(i, j int) bool { return a[i].name < a[j].name }
-
 
 /*
 *
@@ -61,6 +59,8 @@ func destructurePackage(packageObj interface{}) {
 	}
 }
 
+
+
 func destructure(packageObj interface{}, locals map[string]interface{}) {
 	switch packageObj := packageObj.(type) {
 	case struct{}:
@@ -83,38 +83,36 @@ func destructure(packageObj interface{}, locals map[string]interface{}) {
 }
 
 func destructurePackageWithPackageName(packageName string, packageObj interface{}) {
-    locals := make([]localVar, 0)
-    destructure(packageName, packageObj, &locals)
+	locals := make([]localVar, 0)
+	destructure(packageName, packageObj, &locals)
 
-    // Sort the locals by variable name
-    sort.Sort(byName(locals))
+	// Sort the locals by variable name
+	sort.Sort(byName(locals))
 
-    // Apply the locals to the file definition
-    for _, local := range locals {
-        reflect.ValueOf(local.value).Elem().Set(reflect.ValueOf(local.value))
-    }
+	// Apply the locals to the file definition
+	for _, local := range locals {
+		reflect.ValueOf(local.value).Elem().Set(reflect.ValueOf(local.value))
+	}
 }
 
 func destructureWithPackageName(packageName string, packageObj interface{}, locals *[]localVar) {
-    switch packageObj := packageObj.(type) {
-    case struct{}:
-        // If packageObj is an empty struct, do nothing
-    case map[string]interface{}:
-        for key, value := range packageObj {
-            varName := fmt.Sprintf("%s.%s", packageName, key)
-            switch value.(type) {
-            case int:
-                // If value is an integer, add it to locals with the package name and key as the variable name
-                *locals = append(*locals, localVar{name: varName, value: value})
-            case func():
-                // If value is a function, add it to locals with the package name and key as the variable name
-                *locals = append(*locals, localVar{name: varName, value: value})
-            case interface{}:
-                // If value is an object or a variable, recurse into it and add its elements to locals
-                destructure(varName, value, locals)
-            }
-        }
-    }
+	switch packageObj := packageObj.(type) {
+	case struct{}:
+		// If packageObj is an empty struct, do nothing
+	case map[string]interface{}:
+		for key, value := range packageObj {
+			varName := fmt.Sprintf("%s.%s", packageName, key)
+			switch value.(type) {
+			case int:
+				// If value is an integer, add it to locals with the package name and key as the variable name
+				*locals = append(*locals, localVar{name: varName, value: value})
+			case func():
+				// If value is a function, add it to locals with the package name and key as the variable name
+				*locals = append(*locals, localVar{name: varName, value: value})
+			case interface{}:
+				// If value is an object or a variable, recurse into it and add its elements to locals
+				destructure(varName, value, locals)
+			}
+		}
+	}
 }
-
-
