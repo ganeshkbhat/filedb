@@ -63,9 +63,9 @@ func DecryptString(hash, password string) (string, error) {
 }
 
 
-func usage(plaintext string, password string) (string, string, error) {
-	plaintext = "Hello, world!"
-	password = "mysecretpassword"
+func usageHash(plaintext string, password string) (string, error) {
+	// plaintext = "Hello, world!"
+	// password = "mysecretpassword"
 
 	// // The plaintext string to be encrypted and decrypted
 	// plaintext := "Hello, world!"
@@ -76,16 +76,29 @@ func usage(plaintext string, password string) (string, string, error) {
 	hash, err := EncryptString(plaintext, password)
 	if err != nil {
 		fmt.Println("Encryption error:", err)
-		return 
+		return "", err
 	}
 	fmt.Println("Encrypted hash:", hash)
+
+	return hash, nil
+}
+
+func usageDecrypt(hash string, password string) (string, error) {
+	// plaintext = "Hello, world!"
+	// password = "mysecretpassword"
+
+	// // The plaintext string to be encrypted and decrypted
+	// plaintext := "Hello, world!"
+	// // The password to use for encryption and decryption
+	// password := "mysecretpassword"
 
 	// Decrypt the hash back to the plaintext string
 	decryptedPlaintext, err := DecryptString(hash, password)
 	if err != nil {
 		fmt.Println("Decryption error:", err)
-		return 
+		return "", err
 	}
 	fmt.Println("Decrypted plaintext:", decryptedPlaintext)
-	return hash, decryptedPlaintext, nil
+	return decryptedPlaintext, nil
 }
+
