@@ -1,24 +1,48 @@
 package memcached
 
 import (
+	"flag"
+	"fmt"
 	memcached "github.com/mattrobenolt/go-memcached"
+	"log"
+	"runtime"
 )
 
-type Cache struct {}
+var (
+	listen  = flag.String("l", "", "Interface to listen on. Default to all addresses.")
+	port    = flag.Int("p", 11211, "TCP port number to listen on (default: 11211)")
+	threads = flag.Int("t", runtime.NumCPU(), fmt.Sprintf("number of threads to use (default: %d)", runtime.NumCPU()))
+)
 
-func (c *Cache) Get(key string) (item *memcached.Item, err error) {
-	if key == "hello" {
-		item = &memcached.Item{
-			Key: key,
-			Value: []byte("world"),
+type Cache map[string]*memcached.Item
+
+func (c Cache) Get(key string) memcached.MemcachedResponse {
+	if item, ok := c[key]; ok {
+		if item.IsExpired() {
+			delete(c, key)
+		} else {
+			return &memcached.ItemResponse{item}
 		}
-		return item, nil
 	}
-	return nil, memcached.NotFound
+	return nil
 }
 
-// func main() {
-// 	server := memcached.NewServer(":11211", &Cache{})
-// 	server.ListenAndServe()
-// }
+func (c Cache) Set(item *memcached.Item) memcached.MemcachedResponse {
+	c[item.Key] = item
+	return nil
+}
 
+func (c Cache) Delete(key string) memcached.MemcachedResponse {
+	delete(c, key)
+	return nil
+}
+
+func ServeMemcache(flag interface{}) {
+	// func main()
+	flag.Parse()
+	runtime.GOMAXPROCS(*threads)
+
+	address := fmt.Sprintf("%s:%d", *listen, *port)
+	server := memcached.NewServer(address, make(Cache))
+	log.Fatal(server.ListenAndServe())
+}
