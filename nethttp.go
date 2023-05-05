@@ -73,7 +73,7 @@ func serveHTTP1(l net.Listener) {
 // Returns:
 // This function does not return anything.
 func serveHTTPS(l net.Listener) {
-	certificate, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
+	certificate, err := tls.LoadX509KeyPair("./certs/ssl.cert", "./certs/ssl.key")
 	if err != nil {
 		log.Panic(err)
 	}
