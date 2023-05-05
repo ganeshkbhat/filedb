@@ -18,38 +18,40 @@ import (
 	// grpc "google.golang.org/grpc"
 )
 
+// Summary:
+// The serverHTTPHandler struct represents an implementation of the http.Handler interface.
+// Args:
+// N/A
+// Returns:
+// N/A
 type serverHTTPHandler struct{}
+
+// Summary:
+// `serverRPCRcvr` is a struct type in Go language used by the `net/rpc` package to receive and handle RPC messages sent to a server.
+// Args:
+// This struct type does not accept any arguments.
+// Returns:
+// None. This is a struct type and does not have a return statement.
 type serverRPCRcvr struct{}
 
+// Summary:
+// This function handles incoming HTTP requests and returns a sample HTTP response.
+// Args:
+// - w: An object of the type http.ResponseWriter used to write HTTP response.
+// - r: An object of the type http.Request used to read HTTP request.
+// Returns:
+// This function does not return any values, but it writes "example http response" to the HTTP response object.
 func (h *serverHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "example http response")
 }
 
-// wrong struct and mod implementation
-// func serveRpc() {
-// 	// Create the main listener.
-// 	l, err := net.Listen("tcp", ":23456")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	// Create a cmux.
-// 	m := cmux.New(l)
 
-// 	// Match connections in order:
-// 	// First grpc, then HTTP, and otherwise Go RPC/TCP.
-// 	trpcL := m.Match(cmux.Any()) // Any means anything that is not yet matched.
-
-// 	// Create your protocol servers.
-// 	trpcS := grpc.NewServer()
-// 	trpcS.Register(&serverRPCRcvr{})
-
-// 	// Use the muxed listeners for your servers.
-// 	go trpcS.Accept(trpcL)
-
-// 	// Start serving!
-// 	m.Serve()
-// }
-
+// Summary:
+// The serveHTTP function creates an HTTP server and sets up a handler for it to use, then serves incoming requests on the provided listener.
+// Args:
+// - l: A net.Listener representing the listener to serve requests on.
+// Returns:
+// None (void function).
 func serveHTTP(l net.Listener) {
 	s := &http.Server{
 		Handler: &serverHTTPHandler{},
@@ -59,6 +61,13 @@ func serveHTTP(l net.Listener) {
 	}
 }
 
+// Summary:
+// This function serves HTTPS over a specified listener using SSL/TLS certificates loaded from disk.
+// Args:
+// - l (net.Listener): The listener to serve HTTPS on.
+// - listenport (bool): A boolean value indicating whether to create a new listener on the default HTTPS port (443).
+// Returns:
+// No return statement, as the function only performs actions.
 func serveHTTPS(l net.Listener, listenport bool) {
 	// Load certificates.
 	certificate, err := tls.LoadX509KeyPair("./certs/ssl.cert", "./certs/ssl.key")
@@ -82,7 +91,6 @@ func serveHTTPS(l net.Listener, listenport bool) {
 				log.Fatal(err)
 			}
 			// Start server with https/ssl enabled on http://localhost:443
-			// log.Fatal(app.Listener(ln))
 			log.Fatal(ln)
 		}()
 	}
@@ -92,6 +100,15 @@ func serveHTTPS(l net.Listener, listenport bool) {
 }
 
 // This is an example for serving HTTP and HTTPS on the same port.
+
+// Summary:
+// Netserve is a function that creates a TCP listener using the specified protocol and IP address and serves HTTP and HTTPS protocols using cmux package.
+// It also listens for interrupt or termination signal to trigger graceful shutdown.
+// Args:
+// - netprotocol (string): network protocol to be used for creating TCP listener.
+// - netipport (string): IP address and port number of the listener.
+// Returns:
+// void
 func Netserve(netprotocol string, netipport string) {
 	// Create the TCP listener.
 	l, err := net.Listen("tcp", "127.0.0.1:50051")
@@ -114,13 +131,6 @@ func Netserve(netprotocol string, netipport string) {
 	go serveHTTP(httpl)
 	go serveHTTPS(tlsl, false)
 
-	// // Create a cmux object.
-	// tcpm := cmux.New(l)
-
-	// // Declare the match for different services required.
-	// httpl := tcpm.Match(cmux.HTTP1Fast())
-	// grpcl := tcpm.MatchWithWriters(
-	// 	cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"))
 	// http2 := tcpm.Match(cmux.HTTP2())
 
 	// Listen for the process signal to trigger grceful shutdown When an interrupt or termination signal is sent
