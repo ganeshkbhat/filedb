@@ -1,4 +1,4 @@
-package main
+package netserve
 
 import (
 	"crypto/rand"
@@ -92,7 +92,7 @@ func serveHTTPS(l net.Listener, listenport bool) {
 }
 
 // This is an example for serving HTTP and HTTPS on the same port.
-func main() {
+func Netserve(netprotocol string, netipport string) {
 	// Create the TCP listener.
 	l, err := net.Listen("tcp", "127.0.0.1:50051")
 	if err != nil {
