@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	// "net/rpc"
+
 	"os"
 	"os/signal"
 	"strings"
@@ -20,8 +21,9 @@ import (
 	// status "google.golang.org/grpc/status"
 
 	// "golang.org/x/net/context"
-	"github.com/soheilhy/cmux"
 	"golang.org/x/net/websocket"
+
+	"github.com/soheilhy/cmux"
 )
 
 // Summary:
@@ -32,6 +34,22 @@ import (
 // There is no return statement for this struct declaration.
 type serverHTTPHandler struct{}
 
+func (h *serverHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "example http response")
+}
+
+// Summary:
+// EchoServer echoes back any message sent over a websocket connection.
+// Args:
+// - ws (*websocket.Conn): a websocket connection object
+// Returns:
+// None. The function writes the message back to the client.
+func EchoServer(ws *websocket.Conn) {
+	if _, err := io.Copy(ws, ws); err != nil {
+		panic(err)
+	}
+}
+
 // Summary:
 // The `ServeHTTP` method handles incoming HTTP requests and responds with an example HTTP response.
 // Args:
@@ -39,17 +57,7 @@ type serverHTTPHandler struct{}
 // - `r *http.Request`: a pointer to the incoming HTTP request.
 // Returns:
 // This method doesn't return anything.
-func (h *serverHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "example http response")
-}
-
-// Summary:
-// `serveHTTP` is a function that serves HTTP requests using the specified `net.Listener`.
-// Args:
-// - `l net.Listener`: an object of type `net.Listener` that represents the network listener.
-// Returns:
-// This function does not return any values, but it may panic if an error occurs during server operation.
-func serveHTTP(l net.Listener) {
+func serveHTTP1(l net.Listener) {
 	s := &http.Server{
 		Handler: &serverHTTPHandler{},
 	}
@@ -65,8 +73,7 @@ func serveHTTP(l net.Listener) {
 // Returns:
 // This function does not return anything.
 func serveHTTPS(l net.Listener) {
-	// Load certificates.
-	certificate, err := tls.LoadX509KeyPair("./certs/ssl.cert", "./certs/ssl.key")
+	certificate, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -80,15 +87,49 @@ func serveHTTPS(l net.Listener) {
 	tlsl := tls.NewListener(l, config)
 
 	// Serve HTTP over TLS.
-	serveHTTP(tlsl)
+	serveHTTP1(tlsl)
 }
 
 // Summary:
-// tlsListener is a function that creates a TLS listener using the provided net.Listener.
+// This function creates an HTTP server and configures it to handle WebSocket connections using the EchoServer function.
 // Args:
-// - l: A net.Listener representing the listener to be used for the TLS listener creation.
+// - l: A net.Listener instance that represents the listening socket.
 // Returns:
-// - A net.Listener representing the TLS listener.
+// This function does not return a value. It serves the HTTP server until the listener is closed. If an error occurs, it panics.
+func serveWS(l net.Listener) {
+	s := &http.Server{
+		Handler: websocket.Handler(EchoServer),
+	}
+	if err := s.Serve(l); err != cmux.ErrListenerClosed {
+		panic(err)
+	}
+}
+
+// Summary:
+// This is a function called 'serveWSS' that serves a WebSocket connection using the input 'net.Listener' object.
+// Args:
+// - l: A 'net.Listener' object that represents the listener to use when serving the WebSocket connection.
+// Returns:
+// This function does not return any value. If an error occurs during the WebSocket server initialization and it is not related to
+// the listener being closed, the function will panic.
+func serveWSS(l net.Listener) {
+	s := &http.Server{
+		Handler: websocket.Handler(EchoServer),
+	}
+	if err := s.Serve(l); err != cmux.ErrListenerClosed {
+		panic(err)
+	}
+}
+
+// Summary:
+//
+//	tlsListener is a function that creates a TLS listener using the provided net.Listener.
+//
+// Args:
+//   - l: A net.Listener representing the listener to be used for the TLS listener creation.
+//
+// Returns:
+//   - A net.Listener representing the TLS listener.
 func tlsListener(l net.Listener) net.Listener {
 	// Load certificates.
 	certificate, err := tls.LoadX509KeyPair("./certs/ssl.cert", "./certs/ssl.key")
@@ -107,108 +148,65 @@ func tlsListener(l net.Listener) net.Listener {
 }
 
 // Summary:
-// EchoServer echoes back any message sent over a websocket connection.
-// Args:
-// - ws (*websocket.Conn): a websocket connection object
-// Returns:
-// None. The function writes the message back to the client.
-func EchoServer(ws *websocket.Conn) {
-	if _, err := io.Copy(ws, ws); err != nil {
-		panic(err)
-	}
-}
-
-// Summary:
-// This function creates an HTTP server and configures it to handle WebSocket connections using the EchoServer function.
-// Args:
-// - l: A net.Listener instance that represents the listening socket.
-// Returns:
-// This function does not return a value. It serves the HTTP server until the listener is closed. If an error occurs, it panics.
-func serveWS(l net.Listener) {
-	s := &http.Server{
-		Handler: websocket.Handler(EchoServer),
-	}
-	if err := s.Serve(l); err != cmux.ErrListenerClosed {
-		panic(err)
-	}
-}
-
-// // This is an example for serving HTTP, HTTPS, and GoRPC/TLS on the same port.
-// Summary:
-// Serve function starts a server for gRPC, HTTP, HTTPS, and WebSocket connections. It creates
 //
-//	a TCP listener, matches it against HTTP1.1 headers, WebSocket upgrade request, and any TLS connection. It also
-//	listens for any interrupt or termination signal to trigger the graceful shutdown and cleanup tasks.
+// This is an example for serving HTTP and HTTPS on the same port.
+// tlsListener is a function that creates a TLS listener using the provided net.Listener.
 //
 // Args:
-// - netprotocol (string): The network protocol to be used, e.g. tcp, udp, etc.
-// - ipaddressport (string): The IP address and port number for the listener to listen on.
+// - l: A net.Listener representing the listener to be used for the TLS listener creation.
 //
 // Returns:
-// No return value.
-func Serve(netprotocol string, ipaddressport string) {
+// - A net.Listener representing the TLS listener.
+func ServeHTTPAndHTTPS(netprotocol string, ipaddressport string, enablehttps bool, enablews bool, enablewss bool) {
 	if netprotocol == "" || netprotocol == "null" {
 		netprotocol = "tcp"
 	}
 	if ipaddressport == "" || ipaddressport == "null" {
 		ipaddressport = "127.0.0.1:50051"
 	}
-
-	// // Create the TCP listener.
+	// Create the TCP listener.
 	l, err := net.Listen(netprotocol, ipaddressport)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	// // Create a mux.
-	tcpm := cmux.New(l)
+	// Create a mux.
+	m := cmux.New(l)
 
-	// // We first match on HTTP 1.1 methods.
-	httpl := tcpm.Match(cmux.HTTP1Fast())
+	// We first match on HTTP 1.1 methods.
+	httpl := m.Match(cmux.HTTP1Fast())
+	go serveHTTP1(httpl)
 
-	// If not matched, we assume that its TLS.
-	//
-	// // Note that you can take this listener, do TLS handshake and
-	// // create another mux to multiplex the connections over TLS.
-	// // tlsl := m.Match(cmux.Any())
-	tlsl := tcpm.Match(cmux.Any())
-	tlsl = tlsListener(tlsl)
+	if enablehttps {
+		//
+		// If not matched, we assume that its TLS.
+		// Note that you can take this listener, do TLS handshake and
+		// create another mux to multiplex the connections over TLS.
+		//
+		tlsl := m.Match(cmux.Any())
+		go serveHTTPS(tlsl)
+	}
 
-	// // // Otherwise, we match it againts a websocket upgrade request.
-	wsl := tcpm.Match(cmux.HTTP1HeaderField("Upgrade", "websocket"))
+	if enablews {
+		// // Otherwise, we match it againts a websocket upgrade request.
+		wsl := m.Match(cmux.HTTP1HeaderField("Upgrade", "websocket"))
+		go serveWS(wsl)
+	}
 
-	// // Now, we build another mux recursively to match HTTPS and GoRPC.
-	// // You can use the same trick for SSH.
-	// tlsm := cmux.New(tlsl)
-	tlsm := cmux.New(l)
-
-	// // // We first match the connection against HTTP2 fields. If matched, the
-	// // // connection will be sent through the "grpcl" listener.
-	// // grpcl := tlsm.Match(cmux.HTTP2HeaderFieldPrefix("content-type", "application/grpc"))
-	// // // Otherwise, we match it againts a websocket upgrade request.
-	wsl2 := tlsm.Match(cmux.HTTP1HeaderField("Upgrade", "websocket"))
-
-	// // // Otherwise, we match it againts HTTP1 methods. If matched,
-	// // // it is sent through the "httpl" listener.
-	// // httpl := tcpm.Match(cmux.HTTP1Fast())
-	// // // If not matched by HTTP, we assume it is an RPC connection.
-	// // rpcl := tcpm.Match(cmux.Any())
-
-	// // Then we used the muxed listeners.
-	go serveWS(wsl)
-	go serveWS(wsl2)
-
-	go serveHTTP(httpl)
-	go serveHTTPS(tlsl)
+	if enablewss {
+		// // Otherwise, we match it againts a websocket upgrade request.
+		// wssl := m.Match(cmux.HTTP1HeaderField("Upgrade", "websocket"))
+		// go serveWSS(wssl)
+	}
 
 	// Summary:
 	// Listen for the process signal to trigger grceful shutdown When an interrupt or termination signal is sent.
-	// This function starts a goroutine for graceful shutdown of the server. It creates a channel to notify on receipt of interrupts.
-	// It waits on the channel and when a signal is received it gracefully shuts down the server and runs cleanup tasks.
+	// 		This function starts a goroutine for graceful shutdown of the server. It creates a channel to notify on receipt of interrupts.
+	// 		It waits on the channel and when a signal is received it gracefully shuts down the server and runs cleanup tasks.
 	// Args:
-	// - l (net.Listener): an instance of net.Listener
+	// 		- l (net.Listener): an instance of net.Listener
 	// Returns:
-	// Void
+	// 		Void
 	go func(l net.Listener) {
 		// sig := make(chan os.Signal, 1)
 		// signal.Notify(sig, syscall.SIGHUP)
@@ -233,26 +231,36 @@ func Serve(netprotocol string, ipaddressport string) {
 		fmt.Println("Fiber was successful shutdown.")
 	}(l)
 
-	// Summary:
-	// This is a go anonymous function that launches a TLS server.
-	// Args:
-	// None
-	// Returns:
-	// None, it is a goroutine launched inside the main thread. However, it may panic if an error occurs while serving.
-	go func() {
-		if err := tlsm.Serve(); err != cmux.ErrListenerClosed {
-			panic(err)
-		}
-	}()
-
-	if err := tcpm.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
+	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
 		panic(err)
 	}
 
+	// //
+	// // Ways of Invoking
+	// //
+	// // Summary:
+	// // 	This is a go anonymous function that launches a TLS server.
+	// // Args:
+	// // 	None
+	// // Returns:
+	// // 	None, it is a goroutine launched inside the main thread. However, it may panic if an error occurs while serving.
+	// //
+	//
+	// go func() {
+	// 	if err := tlsm.Serve(); err != cmux.ErrListenerClosed {
+	// 		panic(err)
+	// 	}
+	// }()
+	//
+	// if err := tcpm.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
+	// 		panic(err)
+	// }
+	//
 }
 
 // Summary:
 // The `main()` function creates a TCP listener and serves a gRPC service on the specified address.
+//
 //	This is an example for serving HTTP, HTTPS, and GoRPC/TLS on the same port.
 //
 // Args:
@@ -261,5 +269,5 @@ func Serve(netprotocol string, ipaddressport string) {
 // None
 func main() {
 	// // Create the TCP listener.
-	Serve("tcp", "127.0.0.1:50051")
+	ServeHTTPAndHTTPS("tcp", "127.0.0.1:50051", true, true, false)
 }
