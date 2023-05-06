@@ -22,7 +22,6 @@ func (s *grpcServer) Query(ctx context.Context, req *graph.Request) (*graph.Resp
 
 // Handler function for http/https queries.
 
-
 func queryHandler(w http.ResponseWriter, r *http.Request) {
 	addCorsHeaders(w)
 

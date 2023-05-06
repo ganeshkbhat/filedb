@@ -8,11 +8,11 @@ package netgudp
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
-	"io"
 	"time"
-	
+
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -137,7 +137,6 @@ func (s *Server) GetListenedPort() int {
 	}
 	return -1
 }
-
 
 // NewNetConn creates and returns a *net.UDPConn with given addresses.
 func NewNetConn(remoteAddress string, localAddress ...string) (*net.UDPConn, error) {
@@ -465,4 +464,3 @@ func (c *Conn) SetBufferWaitRecv(d time.Duration) {
 func (c *Conn) RemoteAddr() net.Addr {
 	return c.remoteAddr
 }
-

@@ -258,16 +258,16 @@ func ServeHTTPAndHTTPS(netprotocol string, ipaddressport string, enablehttps boo
 	//
 }
 
-// Summary:
-// The `main()` function creates a TCP listener and serves a gRPC service on the specified address.
-//
-//	This is an example for serving HTTP, HTTPS, and GoRPC/TLS on the same port.
-//
-// Args:
-// None
-// Returns:
-// None
-func main() {
-	// // Create the TCP listener.
-	ServeHTTPAndHTTPS("tcp", "127.0.0.1:50051", true, true, false)
-}
+// // Summary:
+// // The `main()` function creates a TCP listener and serves a gRPC service on the specified address.
+// //
+// //	This is an example for serving HTTP, HTTPS, and GoRPC/TLS on the same port.
+// //
+// // Args:
+// // None
+// // Returns:
+// // None
+// func main() {
+// 	// // Create the TCP listener.
+// 	ServeHTTPAndHTTPS("tcp", "127.0.0.1:50051", true, true, false)
+// }
